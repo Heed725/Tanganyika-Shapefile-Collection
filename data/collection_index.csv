@@ -1,0 +1,14 @@
+title,quality,note,year,feature_count,crs
+"German East Africa — Tanganyika-area outline, 1898 proxy",proxy,Territory-level proxy only; not an exact year-specific internal administrative map.,1898,1,EPSG:4326
+"German East Africa — Tanganyika-area outline, 1900 proxy",proxy,Territory-level proxy only; not an exact year-specific internal administrative map.,1900,1,EPSG:4326
+"British Tanganyika territorial outline, 1926 proxy",proxy,Territory-level proxy only; not an exact year-specific internal administrative map.,1926,1,EPSG:4326
+"British Tanganyika territorial outline, 1935 proxy",proxy,Territory-level proxy only; not an exact year-specific internal administrative map.,1935,1,EPSG:4326
+"Tanganyika Provinces, 1948",direct-historical,,1948,9,EPSG:4326
+"Tanganyika Provinces, 1950",direct-historical,,1950,9,EPSG:4326
+"Tanganyika Provinces, 1960 reconstruction",reconstructed-proxy,,1960,10,EPSG:4326
+"Tanganyika Provinces, 1961 reconstruction",reconstructed-proxy,,1961,10,EPSG:4326
+"Mainland Regions, 1963 reconstruction",reconstructed-proxy,,1963,17,EPSG:4326
+"Mainland Regions, 1964 reconstruction",reconstructed-proxy,,1964,17,EPSG:4326
+"Tanzania Mainland Regions, 1967",reconstructed,,1967,17,EPSG:4326
+"Tanzania Mainland Regions, 1972 reconstruction",reconstructed,,1972,19,EPSG:4326
+"Tanzania Mainland Regions, 1974 reconstruction",reconstructed,,1974,20,EPSG:4326
