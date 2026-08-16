@@ -1,0 +1,132 @@
+name: Build Tanganyika Historical Shapefile Collection
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/build_collection.py'
+      - '.github/workflows/build-historical-collection.yml'
+      - 'requirements.txt'
+      - 'metadata/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tanganyika-historical-collection
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout collection repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout modern Tanzania administrative source
+        uses: actions/checkout@v4
+        with:
+          repository: Heed725/Tanzania_Admin_Shapefiles
+          path: source_modern
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install GIS dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build all requested historical snapshots
+        run: |
+          python scripts/build_collection.py \
+            --modern-source source_modern \
+            --output-root .
+
+      - name: Validate requested years and packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          for y in 1898 1900 1926 1935 1948 1950 1960 1961 1963 1964 1967 1972 1974; do
+            test -d "data/$y"
+            test -f "data/$y/metadata.json"
+            find "data/$y" -name '*.shp' -print -quit | grep -q .
+            find "data/$y" -name '*.geojson' -print -quit | grep -q .
+            find "data/$y" -name '*.gpkg' -print -quit | grep -q .
+          done
+          test -f data/collection_index.csv
+          ls -lh dist/
+
+      - name: Create complete collection bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f dist/Tanganyika_Historical_Shapefile_Collection.zip
+          zip -qr dist/Tanganyika_Historical_Shapefile_Collection.zip data docs/previews metadata README.md
+
+      - name: Commit generated GIS outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data dist docs/previews
+          if git diff --cached --quiet; then
+            echo 'No generated changes to commit.'
+          else
+            git commit -m 'Build historical boundary collection'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
+      - name: Publish collection release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG='historical-boundaries'
+          TITLE='Tanganyika / Tanzania Historical Boundary Collection'
+          NOTES='Historical GIS snapshots for 1898, 1900, 1926, 1935, 1948, 1950, 1960, 1961, 1963, 1964, 1967, 1972 and 1974. Direct historical sources, reconstructions and proxies are explicitly identified in metadata.'
+
+          CURRENT_SHA=$(git rev-parse HEAD)
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            git tag -f "$TAG" "$CURRENT_SHA"
+          else
+            git tag "$TAG" "$CURRENT_SHA"
+          fi
+          git push origin "refs/tags/$TAG" --force
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TITLE" --notes "$NOTES"
+          else
+            gh release create "$TAG" --title "$TITLE" --notes "$NOTES"
+          fi
+
+          gh release upload "$TAG" \
+            dist/*_Shapefile.zip \
+            dist/Tanganyika_Historical_Shapefile_Collection.zip \
+            data/collection_index.csv \
+            data/*/*.geojson \
+            data/*/*.gpkg \
+            data/*/metadata.json \
+            docs/previews/*.png \
+            --clobber
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tanganyika-Historical-Shapefile-Collection
+          path: |
+            data/
+            dist/
+            docs/previews/
+            metadata/
+            README.md
