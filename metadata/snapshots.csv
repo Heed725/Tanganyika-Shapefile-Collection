@@ -1,0 +1,14 @@
+year,territory,level,status,quality,primary_basis
+1898,German East Africa - Tanganyika area,territory,proxy,proxy,Princeton 1950 Tanganyika outline used as territorial reference
+1900,German East Africa - Tanganyika area,territory,proxy,proxy,Princeton 1950 Tanganyika outline used as territorial reference
+1926,British Tanganyika,territory,proxy,proxy,Princeton 1950 Tanganyika outline + district proclamation chronology
+1935,British Tanganyika,territory,proxy,proxy,Princeton 1950 Tanganyika outline + district proclamation chronology
+1948,Tanganyika,province,direct,direct-historical,Princeton University Library 1948 historical boundary dataset
+1950,Tanganyika,province+district,direct,direct-historical,Princeton University Library 1950 historical boundary dataset
+1960,Tanganyika,province,reconstructed,reconstructed-proxy,Princeton 1950 districts + late-colonial province lineage
+1961,Tanganyika,province,reconstructed,reconstructed-proxy,Princeton 1950 districts + independence-era province lineage
+1963,Tanganyika,region,reconstructed,reconstructed-proxy,1963 Regions Proclamation + 1967 reconstructed geometry proxy
+1964,Tanzania Mainland,region,reconstructed,reconstructed-proxy,1964 regional amendment chronology + 1967 geometry proxy
+1967,Tanzania Mainland,region,reconstructed,reconstructed,Heed725/Tanzania-1967-Region-Shapefiles
+1972,Tanzania Mainland,region,reconstructed,reconstructed,modern district geometry reversed to 1972 parent regions
+1974,Tanzania Mainland,region,reconstructed,reconstructed,modern district geometry reversed to 1974 parent regions
