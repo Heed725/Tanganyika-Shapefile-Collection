@@ -81,7 +81,11 @@ CURRENT_REGION_NAMES = {
 def norm(value: object) -> str:
     if value is None or pd.isna(value):
         return ""
-    text = unicodedata.normalize("NFKD", str(value)).encode("ascii", "ignore").decode("ascii")
+    text = (
+        unicodedata.normalize("NFKD", str(value))
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
     text = text.upper().replace("&", " AND ")
     text = re.sub(r"[^A-Z0-9]+", " ", text)
     return re.sub(r"\s+", " ", text).strip()
@@ -132,12 +136,22 @@ def detect_col(gdf: gpd.GeoDataFrame, preferred: list[str]) -> str:
     for c in preferred:
         if c.lower() in low:
             return low[c.lower()]
-    raise RuntimeError(f"Could not find any of {preferred}; columns={list(gdf.columns)}")
+    raise RuntimeError(
+        f"Could not find any of {preferred}; columns={list(gdf.columns)}"
+    )
 
 
 def detect_modern_fields(gdf: gpd.GeoDataFrame) -> tuple[str, str]:
     region_candidates = ["REGION", "Region", "region", "REGION_NAME", "NAME_1", "MKOA"]
-    unit_candidates = ["DISTRICT", "District", "district", "COUNCIL", "Council", "NAME_2", "WILAYA"]
+    unit_candidates = [
+        "DISTRICT",
+        "District",
+        "district",
+        "COUNCIL",
+        "Council",
+        "NAME_2",
+        "WILAYA",
+    ]
 
     region_col = None
     for col in region_candidates:
@@ -171,7 +185,9 @@ def detect_modern_fields(gdf: gpd.GeoDataFrame) -> tuple[str, str]:
     raise RuntimeError("Could not detect modern district/council column")
 
 
-def save_layer(gdf: gpd.GeoDataFrame, year: int, stem: str, root: Path, meta: dict) -> None:
+def save_layer(
+    gdf: gpd.GeoDataFrame, year: int, stem: str, root: Path, meta: dict
+) -> None:
     out = root / "data" / str(year)
     dist = root / "dist"
     previews = root / "docs" / "previews"
@@ -197,15 +213,22 @@ def save_layer(gdf: gpd.GeoDataFrame, year: int, stem: str, root: Path, meta: di
 
     meta = dict(meta)
     meta.update({"year": year, "feature_count": int(len(gdf)), "crs": "EPSG:4326"})
-    (out / "metadata.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+    (out / "metadata.json").write_text(
+        json.dumps(meta, indent=2) + "\n", encoding="utf-8"
+    )
 
     fig, ax = plt.subplots(figsize=(8, 9))
     gdf.boundary.plot(ax=ax, linewidth=0.65)
-    label_col = next((c for c in ["REGION", "PROVINCE", "DISTRICT", "NAME"] if c in gdf.columns), None)
+    label_col = next(
+        (c for c in ["REGION", "PROVINCE", "DISTRICT", "NAME"] if c in gdf.columns),
+        None,
+    )
     if label_col and len(gdf) <= 60:
         for _, row in gdf.iterrows():
             p = row.geometry.representative_point()
-            ax.text(p.x, p.y, str(row[label_col]), fontsize=5.5, ha="center", va="center")
+            ax.text(
+                p.x, p.y, str(row[label_col]), fontsize=5.5, ha="center", va="center"
+            )
     ax.set_title(meta.get("title", stem))
     ax.set_axis_off()
     fig.tight_layout()
@@ -227,7 +250,9 @@ def read_princeton_1950(work: Path) -> gpd.GeoDataFrame:
 
 def mainland_outline(source: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     geom = source.geometry.union_all()
-    return gpd.GeoDataFrame({"NAME": ["Tanganyika area"], "geometry": [geom]}, crs=source.crs)
+    return gpd.GeoDataFrame(
+        {"NAME": ["Tanganyika area"], "geometry": [geom]}, crs=source.crs
+    )
 
 
 def lake_split_1960_61(districts: gpd.GeoDataFrame, year: int) -> gpd.GeoDataFrame:
@@ -242,9 +267,13 @@ def lake_split_1960_61(districts: gpd.GeoDataFrame, year: int) -> gpd.GeoDataFra
     work.loc[(p == "LAKE PROVINCE") & ~west_lake, "PROVINCE"] = "Lake Province"
     out = work[["PROVINCE", "geometry"]].dissolve(by="PROVINCE", as_index=False)
     out["YEAR"] = year
-    out["METHOD"] = "Reconstructed from 1950 district geometry; Lake Province split using district lineage"
+    out["METHOD"] = (
+        "Reconstructed from 1950 district geometry; Lake Province split using district lineage"
+    )
     out["QUALITY"] = "reconstructed-proxy"
-    out["SOURCE"] = "Princeton 1950 historical districts + documented late-colonial administrative lineage"
+    out["SOURCE"] = (
+        "Princeton 1950 historical districts + documented late-colonial administrative lineage"
+    )
     return out
 
 
@@ -266,7 +295,9 @@ def modern_districts(path: Path) -> tuple[gpd.GeoDataFrame, str, str]:
     return gdf, region_col, unit_col
 
 
-def assign_geita_simiyu(region: str, unit: str, default_map: dict[str, str]) -> str | None:
+def assign_geita_simiyu(
+    region: str, unit: str, default_map: dict[str, str]
+) -> str | None:
     if any(token == region or token in region for token in ZANZIBAR_TOKENS):
         return None
     if region == "GEITA":
@@ -324,14 +355,25 @@ def reconstruct_modern_year(
     work = districts[[region_col, unit_col, "geometry"]].copy()
     work["_REGION"] = work[region_col].map(norm)
     work["_UNIT"] = work[unit_col].map(norm)
-    work["REGION"] = [assign_geita_simiyu(r, u, common) for r, u in zip(work["_REGION"], work["_UNIT"])]
+    work["REGION"] = [
+        assign_geita_simiyu(r, u, common)
+        for r, u in zip(work["_REGION"], work["_UNIT"])
+    ]
     work = work[work["REGION"].notna()].copy()
     out = work[["REGION", "geometry"]].dissolve(by="REGION", as_index=False)
-    out["REGION"] = out["REGION"].str.title().replace({"West Lake": "West Lake", "Dar Es Salaam": "Dar es Salaam"})
+    out["REGION"] = (
+        out["REGION"]
+        .str.title()
+        .replace({"West Lake": "West Lake", "Dar Es Salaam": "Dar es Salaam"})
+    )
     out["YEAR"] = year
-    out["METHOD"] = "Historical reconstruction from later district geometry and administrative lineage"
+    out["METHOD"] = (
+        "Historical reconstruction from later district geometry and administrative lineage"
+    )
     out["QUALITY"] = "reconstructed"
-    out["SOURCE"] = "Heed725/Tanzania_Admin_Shapefiles + Tanzanian region/district chronology"
+    out["SOURCE"] = (
+        "Heed725/Tanzania_Admin_Shapefiles + Tanzanian region/district chronology"
+    )
     return out
 
 
@@ -359,9 +401,13 @@ def main() -> int:
     for year, title in proxy_titles.items():
         g = outline.copy()
         g["YEAR"] = year
-        g["METHOD"] = "Territorial proxy using historical Tanganyika-area outline; no invented internal boundaries"
+        g["METHOD"] = (
+            "Territorial proxy using historical Tanganyika-area outline; no invented internal boundaries"
+        )
         g["QUALITY"] = "proxy"
-        g["SOURCE"] = "Princeton 1950 Tanganyika historical geometry used as territorial reference"
+        g["SOURCE"] = (
+            "Princeton 1950 Tanganyika historical geometry used as territorial reference"
+        )
         save_layer(
             g,
             year,
@@ -376,7 +422,9 @@ def main() -> int:
 
     # 1948 direct historical province layer.
     province1948 = detect_col(src1948, ["Province", "PROVINCE", "NAME"])
-    g1948 = src1948[[province1948, "geometry"]].rename(columns={province1948: "PROVINCE"})
+    g1948 = src1948[[province1948, "geometry"]].rename(
+        columns={province1948: "PROVINCE"}
+    )
     g1948["YEAR"] = 1948
     g1948["METHOD"] = "Direct historical GIS source"
     g1948["QUALITY"] = "direct-historical"
@@ -392,11 +440,15 @@ def main() -> int:
     # 1950 direct historical provinces and districts.
     pcol = detect_col(src1950, ["Province", "PROVINCE"])
     dcol = detect_col(src1950, ["District", "DISTRICT"])
-    d1950 = src1950[[pcol, dcol, "geometry"]].rename(columns={pcol: "PROVINCE", dcol: "DISTRICT"})
+    d1950 = src1950[[pcol, dcol, "geometry"]].rename(
+        columns={pcol: "PROVINCE", dcol: "DISTRICT"}
+    )
     d1950["YEAR"] = 1950
     d1950["METHOD"] = "Direct historical GIS source"
     d1950["QUALITY"] = "direct-historical"
-    d1950["SOURCE"] = "Princeton University Library historical boundaries, revised to May 1950"
+    d1950["SOURCE"] = (
+        "Princeton University Library historical boundaries, revised to May 1950"
+    )
     save_layer(
         d1950,
         1950,
@@ -408,7 +460,9 @@ def main() -> int:
     p1950["YEAR"] = 1950
     p1950["METHOD"] = "Direct historical GIS source, dissolved by province"
     p1950["QUALITY"] = "direct-historical"
-    p1950["SOURCE"] = "Princeton University Library historical boundaries, revised to May 1950"
+    p1950["SOURCE"] = (
+        "Princeton University Library historical boundaries, revised to May 1950"
+    )
     save_layer(
         p1950,
         1950,
@@ -436,7 +490,9 @@ def main() -> int:
     for year in [1963, 1964]:
         g = g1967.copy()
         g["YEAR"] = year
-        g["METHOD"] = "Early regional-system reconstruction using 1967 region geometry as proxy"
+        g["METHOD"] = (
+            "Early regional-system reconstruction using 1967 region geometry as proxy"
+        )
         g["QUALITY"] = "reconstructed-proxy"
         g["SOURCE"] = "1963 regional system chronology + Heed725 1967 reconstruction"
         save_layer(
@@ -479,14 +535,30 @@ def main() -> int:
             },
         )
 
-    requested = [1898, 1900, 1926, 1935, 1948, 1950, 1960, 1961, 1963, 1964, 1967, 1972, 1974]
+    requested = [
+        1898,
+        1900,
+        1926,
+        1935,
+        1948,
+        1950,
+        1960,
+        1961,
+        1963,
+        1964,
+        1967,
+        1972,
+        1974,
+    ]
     missing = [y for y in requested if not (root / "data" / str(y)).exists()]
     if missing:
         raise RuntimeError(f"Missing output years: {missing}")
 
     index_rows = []
     for year in requested:
-        meta = json.loads((root / "data" / str(year) / "metadata.json").read_text(encoding="utf-8"))
+        meta = json.loads(
+            (root / "data" / str(year) / "metadata.json").read_text(encoding="utf-8")
+        )
         index_rows.append(meta)
     pd.DataFrame(index_rows).to_csv(root / "data" / "collection_index.csv", index=False)
 
